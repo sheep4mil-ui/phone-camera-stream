@@ -112,6 +112,9 @@ async function connectSender(event) {
     });
     peer.on('open', () => {
       controlConnection = peer.connect(target, { reliable: true });
+      controlConnection.on('data', (command) => {
+        if (command === 'flip') flipCamera();
+      });
       activeCall = peer.call(target, localStream);
       if (!activeCall) throw new Error('Could not start the video call.');
       activeCall.on('stream', () => {});
@@ -143,6 +146,23 @@ function sendRemoteCommand(command) {
     const recording = !button.classList.contains('recording');
     button.classList.toggle('recording', recording);
     button.querySelector('span').textContent = recording ? 'Stop & save' : 'Start recording';
+  }
+}
+
+function sendDesktopCommand(command) {
+  if (!controlConnection?.open) {
+    const toast = $('#captureToast');
+    toast.textContent = 'Phone remote is still connecting';
+    toast.classList.remove('hidden');
+    setTimeout(() => { toast.classList.add('hidden'); toast.textContent = 'Screenshot saved'; }, 1800);
+    return;
+  }
+  controlConnection.send(command);
+  if (command === 'flip') {
+    const toast = $('#captureToast');
+    toast.textContent = 'Switching phone camera…';
+    toast.classList.remove('hidden');
+    setTimeout(() => { toast.classList.add('hidden'); toast.textContent = 'Screenshot saved'; }, 1200);
   }
 }
 
@@ -245,6 +265,7 @@ $('#disconnectViewer').addEventListener('click', startViewer);
 $('#fullscreenButton').addEventListener('click', () => $('#videoStage').requestFullscreen?.());
 $('#screenshotButton').addEventListener('click', saveScreenshot);
 $('#recordButton').addEventListener('click', toggleRecording);
+$('#desktopFlipButton').addEventListener('click', () => sendDesktopCommand('flip'));
 $('#remoteScreenshot').addEventListener('click', () => sendRemoteCommand('screenshot'));
 $('#remoteRecord').addEventListener('click', () => sendRemoteCommand('record'));
 $('#copyCode').addEventListener('click', async () => {

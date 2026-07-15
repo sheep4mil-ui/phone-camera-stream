@@ -14,6 +14,8 @@ The phone preview also includes remote screenshot and recording controls. They t
 
 Tap **Flip camera** on the phone preview at any time to switch between the front and back cameras without ending the stream.
 
+The computer viewer also has a **Flip** button that remotely switches the phone between its front and back cameras.
+
 The **Include microphone audio** option is enabled by default. Audio plays with the live feed and is included automatically in WebM recordings saved on the computer.
 
 The site is static and hosted on GitHub Pages. PeerJS provides connection signaling; camera video flows directly between the two devices and is not uploaded to this repository or a media server. Room codes are temporary and disappear when the page closes.
