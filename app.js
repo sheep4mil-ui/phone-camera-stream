@@ -87,11 +87,11 @@ function startViewer() {
   peer.on('error', (error) => setStatus($('#viewerStatus'), peerErrorMessage(error), true));
 }
 
-async function getCamera(facingMode) {
+async function getCamera(facingMode, includeAudio = false) {
   if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera access needs HTTPS and a supported browser.');
   return navigator.mediaDevices.getUserMedia({
     video: { facingMode: { ideal: facingMode }, width: { ideal: 1920 }, height: { ideal: 1080 } },
-    audio: false
+    audio: includeAudio ? { echoCancellation: true, noiseSuppression: true, autoGainControl: true } : false
   });
 }
 
@@ -102,7 +102,7 @@ async function connectSender(event) {
   button.disabled = true;
   setStatus($('#senderStatus'), 'Requesting camera permission…');
   try {
-    localStream = await getCamera($('#cameraSelect').value);
+    localStream = await getCamera($('#cameraSelect').value, $('#audioToggle').checked);
     $('#localVideo').srcObject = localStream;
     setStatus($('#senderStatus'), 'Connecting to computer…');
     peer = new Peer();
@@ -224,13 +224,14 @@ async function flipCamera() {
   if (!localStream) return;
   const next = $('#cameraSelect').value === 'environment' ? 'user' : 'environment';
   try {
-    const nextStream = await getCamera(next);
+    const nextStream = await getCamera(next, false);
     const nextTrack = nextStream.getVideoTracks()[0];
+    const audioTracks = localStream.getAudioTracks();
     const senderTrack = activeCall?.peerConnection?.getSenders().find((item) => item.track?.kind === 'video');
     if (senderTrack) await senderTrack.replaceTrack(nextTrack);
-    localStream.getTracks().forEach((track) => track.stop());
-    localStream = nextStream;
-    $('#localVideo').srcObject = nextStream;
+    localStream.getVideoTracks().forEach((track) => track.stop());
+    localStream = new MediaStream([nextTrack, ...audioTracks]);
+    $('#localVideo').srcObject = localStream;
     $('#cameraSelect').value = next;
   } catch (error) { setStatus($('#senderStatus'), error.message, true); }
 }

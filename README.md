@@ -12,6 +12,10 @@ On the computer, use the circular capture button beneath the live feed to save t
 
 The phone preview also includes remote screenshot and recording controls. They tell the computer to capture or record, so the resulting files are saved to the computer's downloads folder.
 
+Tap **Flip camera** on the phone preview at any time to switch between the front and back cameras without ending the stream.
+
+The **Include microphone audio** option is enabled by default. Audio plays with the live feed and is included automatically in WebM recordings saved on the computer.
+
 The site is static and hosted on GitHub Pages. PeerJS provides connection signaling; camera video flows directly between the two devices and is not uploaded to this repository or a media server. Room codes are temporary and disappear when the page closes.
 
 ## Browser support

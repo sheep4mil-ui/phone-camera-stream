@@ -76,8 +76,12 @@
           <option value="environment">Back camera</option>
           <option value="user">Front camera</option>
         </select>
+        <label class="audio-option" for="audioToggle">
+          <input id="audioToggle" type="checkbox" checked>
+          <span><b>Include microphone audio</b><small>Plays live and is included in recordings</small></span>
+        </label>
         <button id="connectButton" class="action" type="submit">Start camera</button>
-        <p class="fine-print">Your browser will ask for camera permission. Audio is off by default.</p>
+        <p class="fine-print">Your browser will ask for camera and microphone permission.</p>
         <div id="senderStatus" class="status hidden"><i></i><span></span></div>
       </form>
       <div id="previewStage" class="video-stage hidden">
@@ -86,10 +90,10 @@
           <span class="live"><i></i> SHARING</span>
           <span>Camera is live</span>
           <div class="spacer"></div>
-          <button id="flipButton" class="icon-button" title="Switch camera">↻</button>
           <button id="stopSender" class="disconnect">Stop</button>
         </div>
         <div class="remote-controls">
+          <button id="flipButton" class="remote-action"><b>↻</b><span>Flip camera</span></button>
           <button id="remoteScreenshot" class="remote-action"><b>⌾</b><span>Take screenshot</span></button>
           <button id="remoteRecord" class="remote-action record"><b>●</b><span>Start recording</span></button>
         </div>
