@@ -40,6 +40,7 @@ function closeEverything() {
   if (controlConnection) controlConnection.close();
   activeCall = peer = localStream = controlConnection = null;
   $('#remoteVideo').srcObject = null;
+  $('#remoteAudio').srcObject = null;
   $('#localVideo').srcObject = null;
   $('#videoStage').classList.add('hidden');
   $('#previewStage').classList.add('hidden');
@@ -76,10 +77,13 @@ function startViewer() {
     call.answer();
     call.on('stream', (stream) => {
       const video = $('#remoteVideo');
+      const audio = $('#remoteAudio');
       video.srcObject = stream;
       video.muted = true;
       video.play().catch(() => {});
       const hasAudio = stream.getAudioTracks().length > 0;
+      audio.srcObject = hasAudio ? new MediaStream(stream.getAudioTracks()) : null;
+      audio.muted = true;
       $('#audioButton').classList.toggle('hidden', !hasAudio);
       $('#connectionLabel').textContent = hasAudio ? 'Phone connected · audio ready' : 'Phone connected · no microphone';
       $('#codeCard').classList.add('hidden');
@@ -111,7 +115,16 @@ async function connectSender(event) {
   button.disabled = true;
   setStatus($('#senderStatus'), 'Requesting camera permission…');
   try {
-    localStream = await getCamera($('#cameraSelect').value, $('#audioToggle').checked);
+    const wantsAudio = $('#audioToggle').checked;
+    localStream = await getCamera($('#cameraSelect').value, wantsAudio);
+    const audioTrack = localStream.getAudioTracks()[0];
+    if (wantsAudio && !audioTrack) throw new Error('The phone did not provide a microphone track. Check microphone permission and try again.');
+    if (audioTrack) {
+      audioTrack.enabled = true;
+      $('#phoneLiveLabel').textContent = `Camera and microphone are live · ${audioTrack.label || 'Phone mic'}`;
+    } else {
+      $('#phoneLiveLabel').textContent = 'Camera is live · microphone off';
+    }
     $('#localVideo').srcObject = localStream;
     setStatus($('#senderStatus'), 'Connecting to computer…');
     peer = new Peer();
@@ -277,18 +290,19 @@ function toggleRecording() {
 }
 
 async function enableRemoteAudio() {
-  const video = $('#remoteVideo');
+  const audio = $('#remoteAudio');
   const button = $('#audioButton');
   try {
-    video.muted = false;
-    video.volume = 1;
-    await video.play();
+    if (!audio.srcObject?.getAudioTracks().length) throw new Error('No microphone track arrived from the phone.');
+    audio.muted = false;
+    audio.volume = 1;
+    await audio.play();
     button.classList.add('audio-on');
     button.querySelector('span').textContent = 'Audio on';
     button.title = 'Phone audio is enabled';
   } catch (error) {
     const toast = $('#captureToast');
-    toast.textContent = 'Browser blocked audio. Click the video, then try again.';
+    toast.textContent = error.message || 'Browser blocked audio. Tap Enable audio again.';
     toast.classList.remove('hidden');
     setTimeout(() => { toast.classList.add('hidden'); toast.textContent = 'Screenshot saved'; }, 2500);
   }

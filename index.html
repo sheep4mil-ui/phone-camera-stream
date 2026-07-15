@@ -8,7 +8,7 @@
   <title>Phone Camera Stream</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
   <main class="shell">
@@ -50,6 +50,7 @@
       </div>
       <div id="videoStage" class="video-stage hidden">
         <video id="remoteVideo" autoplay playsinline></video>
+        <audio id="remoteAudio" autoplay playsinline></audio>
         <div class="video-bar">
           <span class="live"><i></i> LIVE</span>
           <span id="connectionLabel">Phone connected</span>
@@ -90,7 +91,7 @@
         <video id="localVideo" autoplay muted playsinline></video>
         <div class="video-bar">
           <span class="live"><i></i> SHARING</span>
-          <span>Camera is live</span>
+          <span id="phoneLiveLabel">Camera and microphone are live</span>
           <div class="spacer"></div>
           <button id="stopSender" class="disconnect">Stop</button>
         </div>
@@ -105,6 +106,6 @@
     <footer>Keep both pages open while streaming · Best on Chrome, Edge, or Safari</footer>
   </main>
   <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>
