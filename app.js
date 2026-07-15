@@ -9,6 +9,8 @@ let localStream = null;
 let mediaRecorder = null;
 let recordedChunks = [];
 let controlConnection = null;
+let recordingFrame = null;
+let recordingVideoTrack = null;
 
 function show(section) {
   [home, viewer, sender].forEach((item) => item.classList.toggle('hidden', item !== section));
@@ -31,6 +33,7 @@ function setStatus(element, message, error = false) {
 
 function closeEverything() {
   if (mediaRecorder?.state === 'recording') mediaRecorder.stop();
+  if (recordingFrame) cancelAnimationFrame(recordingFrame);
   if (activeCall) activeCall.close();
   if (localStream) localStream.getTracks().forEach((track) => track.stop());
   if (peer) peer.destroy();
@@ -72,7 +75,13 @@ function startViewer() {
     setStatus($('#viewerStatus'), 'Phone found — connecting…');
     call.answer();
     call.on('stream', (stream) => {
-      $('#remoteVideo').srcObject = stream;
+      const video = $('#remoteVideo');
+      video.srcObject = stream;
+      video.muted = true;
+      video.play().catch(() => {});
+      const hasAudio = stream.getAudioTracks().length > 0;
+      $('#audioButton').classList.toggle('hidden', !hasAudio);
+      $('#connectionLabel').textContent = hasAudio ? 'Phone connected · audio ready' : 'Phone connected · no microphone';
       $('#codeCard').classList.add('hidden');
       $('#videoStage').classList.remove('hidden');
     });
@@ -199,6 +208,28 @@ function preferredRecordingType() {
     .find((type) => MediaRecorder.isTypeSupported(type)) || '';
 }
 
+function buildRecordingStream(sourceStream) {
+  const video = $('#remoteVideo');
+  if (!document.createElement('canvas').captureStream || !video.videoWidth || !video.videoHeight) return sourceStream;
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const context = canvas.getContext('2d');
+  const draw = () => {
+    context.save();
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    context.restore();
+    recordingFrame = requestAnimationFrame(draw);
+  };
+  draw();
+  const normalized = canvas.captureStream(30);
+  recordingVideoTrack = normalized.getVideoTracks()[0] || null;
+  sourceStream.getAudioTracks().forEach((track) => normalized.addTrack(track));
+  return normalized;
+}
+
 function toggleRecording() {
   const stream = $('#remoteVideo').srcObject;
   const button = $('#recordButton');
@@ -216,9 +247,14 @@ function toggleRecording() {
   }
   recordedChunks = [];
   const mimeType = preferredRecordingType();
-  mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+  const recordingStream = buildRecordingStream(stream);
+  mediaRecorder = new MediaRecorder(recordingStream, mimeType ? { mimeType } : undefined);
   mediaRecorder.addEventListener('dataavailable', (event) => { if (event.data.size) recordedChunks.push(event.data); });
   mediaRecorder.addEventListener('stop', () => {
+    if (recordingFrame) cancelAnimationFrame(recordingFrame);
+    recordingFrame = null;
+    if (recordingVideoTrack) recordingVideoTrack.stop();
+    recordingVideoTrack = null;
     button.classList.remove('recording');
     button.querySelector('span').textContent = 'Record';
     button.title = 'Start recording';
@@ -238,6 +274,24 @@ function toggleRecording() {
   button.classList.add('recording');
   button.querySelector('span').textContent = 'Stop';
   button.title = 'Stop and save recording';
+}
+
+async function enableRemoteAudio() {
+  const video = $('#remoteVideo');
+  const button = $('#audioButton');
+  try {
+    video.muted = false;
+    video.volume = 1;
+    await video.play();
+    button.classList.add('audio-on');
+    button.querySelector('span').textContent = 'Audio on';
+    button.title = 'Phone audio is enabled';
+  } catch (error) {
+    const toast = $('#captureToast');
+    toast.textContent = 'Browser blocked audio. Click the video, then try again.';
+    toast.classList.remove('hidden');
+    setTimeout(() => { toast.classList.add('hidden'); toast.textContent = 'Screenshot saved'; }, 2500);
+  }
 }
 
 async function flipCamera() {
@@ -265,6 +319,7 @@ $('#disconnectViewer').addEventListener('click', startViewer);
 $('#fullscreenButton').addEventListener('click', () => $('#videoStage').requestFullscreen?.());
 $('#screenshotButton').addEventListener('click', saveScreenshot);
 $('#recordButton').addEventListener('click', toggleRecording);
+$('#audioButton').addEventListener('click', enableRemoteAudio);
 $('#desktopFlipButton').addEventListener('click', () => sendDesktopCommand('flip'));
 $('#remoteScreenshot').addEventListener('click', () => sendRemoteCommand('screenshot'));
 $('#remoteRecord').addEventListener('click', () => sendRemoteCommand('record'));

@@ -18,6 +18,8 @@ The computer viewer also has a **Flip** button that remotely switches the phone 
 
 The **Include microphone audio** option is enabled by default. Audio plays with the live feed and is included automatically in WebM recordings saved on the computer.
 
+After connecting, click **Enable audio** on the computer once. Browsers require this click before they allow incoming sound. Recordings render the visible video through an orientation-normalizing canvas and include the phone microphone track.
+
 The site is static and hosted on GitHub Pages. PeerJS provides connection signaling; camera video flows directly between the two devices and is not uploaded to this repository or a media server. Room codes are temporary and disappear when the page closes.
 
 ## Browser support
