@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="Stream your phone camera to your computer with a private WebRTC connection.">
+  <title>Phone Camera Stream</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <a class="brand" href="./" aria-label="Phone Camera Stream home">
+        <span class="brand-icon" aria-hidden="true"></span>
+        <span>Phone Camera Stream</span>
+      </a>
+      <span class="privacy"><i></i> Peer-to-peer</span>
+    </header>
+
+    <section id="home" class="panel home">
+      <div class="eyebrow">No account. No uploads.</div>
+      <h1>Your phone camera,<br><span>live on your computer.</span></h1>
+      <p class="lead">Open this page on both devices. Your video travels directly between them using encrypted WebRTC.</p>
+      <div class="choices">
+        <button id="watchButton" class="choice primary">
+          <span class="choice-icon monitor" aria-hidden="true"></span>
+          <span><strong>Watch on this computer</strong><small>Create a code for your phone</small></span>
+          <b aria-hidden="true">→</b>
+        </button>
+        <button id="cameraButton" class="choice">
+          <span class="choice-icon phone" aria-hidden="true"></span>
+          <span><strong>Share this phone's camera</strong><small>Connect with a computer code</small></span>
+          <b aria-hidden="true">→</b>
+        </button>
+      </div>
+    </section>
+
+    <section id="viewer" class="panel hidden">
+      <div class="section-head">
+        <button class="back" data-back aria-label="Go back">←</button>
+        <div><div class="eyebrow">Computer</div><h2>Waiting for your phone</h2></div>
+      </div>
+      <div id="codeCard" class="code-card">
+        <p>On your phone, open this site, tap <b>Share this phone's camera</b>, then enter:</p>
+        <button id="copyCode" class="room-code" title="Copy code"><span id="roomCode">···· ····</span><small>Tap to copy</small></button>
+        <div id="viewerStatus" class="status"><i></i><span>Creating secure room…</span></div>
+      </div>
+      <div id="videoStage" class="video-stage hidden">
+        <video id="remoteVideo" autoplay playsinline></video>
+        <div class="video-bar">
+          <span class="live"><i></i> LIVE</span>
+          <span id="connectionLabel">Phone connected</span>
+          <div class="spacer"></div>
+          <button id="screenshotButton" class="icon-button" title="Save screenshot" aria-label="Save screenshot">⌾</button>
+          <button id="recordButton" class="record-button" title="Start recording" aria-label="Start recording"><i></i><span>Record</span></button>
+          <button id="fullscreenButton" class="icon-button" title="Full screen">⛶</button>
+          <button id="disconnectViewer" class="disconnect">Disconnect</button>
+        </div>
+      </div>
+      <div id="captureToast" class="toast hidden" role="status">Screenshot saved</div>
+    </section>
+
+    <section id="sender" class="panel hidden">
+      <div class="section-head">
+        <button class="back" data-back aria-label="Go back">←</button>
+        <div><div class="eyebrow">Phone</div><h2>Connect your camera</h2></div>
+      </div>
+      <form id="connectForm" class="connect-card">
+        <label for="codeInput">Computer code</label>
+        <input id="codeInput" autocomplete="off" autocapitalize="none" spellcheck="false" inputmode="text" maxlength="9" placeholder="ABCD EFGH" required>
+        <label for="cameraSelect">Camera</label>
+        <select id="cameraSelect">
+          <option value="environment">Back camera</option>
+          <option value="user">Front camera</option>
+        </select>
+        <button id="connectButton" class="action" type="submit">Start camera</button>
+        <p class="fine-print">Your browser will ask for camera permission. Audio is off by default.</p>
+        <div id="senderStatus" class="status hidden"><i></i><span></span></div>
+      </form>
+      <div id="previewStage" class="video-stage hidden">
+        <video id="localVideo" autoplay muted playsinline></video>
+        <div class="video-bar">
+          <span class="live"><i></i> SHARING</span>
+          <span>Camera is live</span>
+          <div class="spacer"></div>
+          <button id="flipButton" class="icon-button" title="Switch camera">↻</button>
+          <button id="stopSender" class="disconnect">Stop</button>
+        </div>
+        <div class="remote-controls">
+          <button id="remoteScreenshot" class="remote-action"><b>⌾</b><span>Take screenshot</span></button>
+          <button id="remoteRecord" class="remote-action record"><b>●</b><span>Start recording</span></button>
+        </div>
+      </div>
+    </section>
+
+    <footer>Keep both pages open while streaming · Best on Chrome, Edge, or Safari</footer>
+  </main>
+  <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
