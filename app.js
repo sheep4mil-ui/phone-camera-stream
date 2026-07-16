@@ -11,6 +11,7 @@ let recordedChunks = [];
 let controlConnection = null;
 let recordingFrame = null;
 let recordingVideoTrack = null;
+let talkbackStream = null;
 
 function show(section) {
   [home, viewer, sender].forEach((item) => item.classList.toggle('hidden', item !== section));
@@ -36,11 +37,13 @@ function closeEverything() {
   if (recordingFrame) cancelAnimationFrame(recordingFrame);
   if (activeCall) activeCall.close();
   if (localStream) localStream.getTracks().forEach((track) => track.stop());
+  if (talkbackStream) talkbackStream.getTracks().forEach((track) => track.stop());
   if (peer) peer.destroy();
   if (controlConnection) controlConnection.close();
-  activeCall = peer = localStream = controlConnection = null;
+  activeCall = peer = localStream = controlConnection = talkbackStream = null;
   $('#remoteVideo').srcObject = null;
   $('#remoteAudio').srcObject = null;
+  $('#talkbackAudio').srcObject = null;
   $('#localVideo').srcObject = null;
   $('#videoStage').classList.add('hidden');
   $('#previewStage').classList.add('hidden');
@@ -74,7 +77,7 @@ function startViewer() {
     if (activeCall) { call.close(); return; }
     activeCall = call;
     setStatus($('#viewerStatus'), 'Phone found — connecting…');
-    call.answer();
+    call.answer(talkbackStream || undefined);
     call.on('stream', (stream) => {
       const video = $('#remoteVideo');
       const audio = $('#remoteAudio');
@@ -86,6 +89,7 @@ function startViewer() {
       audio.muted = true;
       $('#audioButton').classList.toggle('hidden', !hasAudio);
       $('#connectionLabel').textContent = hasAudio ? 'Phone connected · audio ready' : 'Phone connected · no microphone';
+      $('#talkbackButton').classList.toggle('hidden', !talkbackStream);
       $('#codeCard').classList.add('hidden');
       $('#videoStage').classList.remove('hidden');
     });
@@ -139,7 +143,14 @@ async function connectSender(event) {
       });
       activeCall = peer.call(target, localStream);
       if (!activeCall) throw new Error('Could not start the video call.');
-      activeCall.on('stream', () => {});
+      activeCall.on('stream', (computerStream) => {
+        const audioTracks = computerStream.getAudioTracks();
+        if (!audioTracks.length) return;
+        const audio = $('#talkbackAudio');
+        audio.srcObject = new MediaStream(audioTracks);
+        audio.muted = true;
+        $('#hearComputer').classList.remove('hidden');
+      });
       activeCall.on('close', stopSender);
       activeCall.on('error', (error) => setStatus($('#senderStatus'), peerErrorMessage(error), true));
       $('#connectForm').classList.add('hidden');
@@ -308,6 +319,48 @@ async function enableRemoteAudio() {
   }
 }
 
+async function enableTalkbackSetup() {
+  const button = $('#enableTalkbackSetup');
+  try {
+    if (talkbackStream) {
+      talkbackStream.getTracks().forEach((track) => track.stop());
+      talkbackStream = null;
+      button.classList.remove('enabled');
+      button.querySelector('b').textContent = 'Enable computer microphone';
+      return;
+    }
+    talkbackStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    button.classList.add('enabled');
+    button.querySelector('b').textContent = 'Computer microphone ready';
+  } catch (error) {
+    setStatus($('#viewerStatus'), error.name === 'NotAllowedError' ? 'Computer microphone permission was denied.' : error.message, true);
+  }
+}
+
+function toggleTalkback() {
+  const track = talkbackStream?.getAudioTracks()[0];
+  if (!track) return;
+  track.enabled = !track.enabled;
+  const button = $('#talkbackButton');
+  button.classList.toggle('audio-on', track.enabled);
+  button.querySelector('span').textContent = track.enabled ? 'Mic on' : 'Mic muted';
+  button.title = track.enabled ? 'Mute computer microphone' : 'Unmute computer microphone';
+}
+
+async function hearComputer() {
+  const audio = $('#talkbackAudio');
+  const button = $('#hearComputer');
+  try {
+    audio.muted = false;
+    audio.volume = 1;
+    await audio.play();
+    button.classList.add('recording');
+    button.querySelector('span').textContent = 'Computer audio on';
+  } catch (error) {
+    button.querySelector('span').textContent = 'Tap again for audio';
+  }
+}
+
 async function flipCamera() {
   if (!localStream) return;
   const next = $('#cameraSelect').value === 'environment' ? 'user' : 'environment';
@@ -334,6 +387,9 @@ $('#fullscreenButton').addEventListener('click', () => $('#videoStage').requestF
 $('#screenshotButton').addEventListener('click', saveScreenshot);
 $('#recordButton').addEventListener('click', toggleRecording);
 $('#audioButton').addEventListener('click', enableRemoteAudio);
+$('#enableTalkbackSetup').addEventListener('click', enableTalkbackSetup);
+$('#talkbackButton').addEventListener('click', toggleTalkback);
+$('#hearComputer').addEventListener('click', hearComputer);
 $('#desktopFlipButton').addEventListener('click', () => sendDesktopCommand('flip'));
 $('#remoteScreenshot').addEventListener('click', () => sendRemoteCommand('screenshot'));
 $('#remoteRecord').addEventListener('click', () => sendRemoteCommand('record'));

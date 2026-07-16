@@ -8,7 +8,7 @@
   <title>Phone Camera Stream</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
   <main class="shell">
@@ -46,6 +46,7 @@
       <div id="codeCard" class="code-card">
         <p>On your phone, open this site, tap <b>Share this phone's camera</b>, then enter:</p>
         <button id="copyCode" class="room-code" title="Copy code"><span id="roomCode">···· ····</span><small>Tap to copy</small></button>
+        <button id="enableTalkbackSetup" class="talkback-setup"><i>♬</i><span><b>Enable computer microphone</b><small>Speak through the phone while connected</small></span></button>
         <div id="viewerStatus" class="status"><i></i><span>Creating secure room…</span></div>
       </div>
       <div id="videoStage" class="video-stage hidden">
@@ -55,6 +56,7 @@
           <span class="live"><i></i> LIVE</span>
           <span id="connectionLabel">Phone connected</span>
           <div class="spacer"></div>
+          <button id="talkbackButton" class="record-button hidden" title="Mute computer microphone" aria-label="Mute computer microphone"><i class="audio-symbol">🎙</i><span>Mic on</span></button>
           <button id="audioButton" class="record-button" title="Enable phone audio" aria-label="Enable phone audio"><i class="audio-symbol">♪</i><span>Enable audio</span></button>
           <button id="desktopFlipButton" class="record-button" title="Flip phone camera" aria-label="Flip phone camera"><i class="flip-symbol">↻</i><span>Flip</span></button>
           <button id="screenshotButton" class="icon-button" title="Save screenshot" aria-label="Save screenshot">⌾</button>
@@ -89,6 +91,7 @@
       </form>
       <div id="previewStage" class="video-stage hidden">
         <video id="localVideo" autoplay muted playsinline></video>
+        <audio id="talkbackAudio" autoplay playsinline></audio>
         <div class="video-bar">
           <span class="live"><i></i> SHARING</span>
           <span id="phoneLiveLabel">Camera and microphone are live</span>
@@ -96,6 +99,7 @@
           <button id="stopSender" class="disconnect">Stop</button>
         </div>
         <div class="remote-controls">
+          <button id="hearComputer" class="remote-action hidden"><b>♪</b><span>Hear computer</span></button>
           <button id="flipButton" class="remote-action"><b>↻</b><span>Flip camera</span></button>
           <button id="remoteScreenshot" class="remote-action"><b>⌾</b><span>Take screenshot</span></button>
           <button id="remoteRecord" class="remote-action record"><b>●</b><span>Start recording</span></button>
@@ -106,6 +110,6 @@
     <footer>Keep both pages open while streaming · Best on Chrome, Edge, or Safari</footer>
   </main>
   <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>
