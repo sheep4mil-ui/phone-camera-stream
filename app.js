@@ -12,6 +12,7 @@ let controlConnection = null;
 let recordingFrame = null;
 let recordingVideoTrack = null;
 let talkbackStream = null;
+let talkbackCall = null;
 
 function show(section) {
   [home, viewer, sender].forEach((item) => item.classList.toggle('hidden', item !== section));
@@ -36,11 +37,12 @@ function closeEverything() {
   if (mediaRecorder?.state === 'recording') mediaRecorder.stop();
   if (recordingFrame) cancelAnimationFrame(recordingFrame);
   if (activeCall) activeCall.close();
+  if (talkbackCall) talkbackCall.close();
   if (localStream) localStream.getTracks().forEach((track) => track.stop());
   if (talkbackStream) talkbackStream.getTracks().forEach((track) => track.stop());
   if (peer) peer.destroy();
   if (controlConnection) controlConnection.close();
-  activeCall = peer = localStream = controlConnection = talkbackStream = null;
+  activeCall = peer = localStream = controlConnection = talkbackStream = talkbackCall = null;
   $('#remoteVideo').srcObject = null;
   $('#remoteAudio').srcObject = null;
   $('#talkbackAudio').srcObject = null;
@@ -77,7 +79,15 @@ function startViewer() {
     if (activeCall) { call.close(); return; }
     activeCall = call;
     setStatus($('#viewerStatus'), 'Phone found — connecting…');
-    call.answer(talkbackStream || undefined);
+    call.answer();
+    if (talkbackStream) {
+      talkbackCall = peer.call(call.peer, talkbackStream, { metadata: { type: 'talkback' } });
+      talkbackCall.on('error', (error) => {
+        const toast = $('#captureToast');
+        toast.textContent = `Talk-back failed: ${error.message}`;
+        toast.classList.remove('hidden');
+      });
+    }
     call.on('stream', (stream) => {
       const video = $('#remoteVideo');
       const audio = $('#remoteAudio');
@@ -143,13 +153,25 @@ async function connectSender(event) {
       });
       activeCall = peer.call(target, localStream);
       if (!activeCall) throw new Error('Could not start the video call.');
-      activeCall.on('stream', (computerStream) => {
-        const audioTracks = computerStream.getAudioTracks();
-        if (!audioTracks.length) return;
-        const audio = $('#talkbackAudio');
-        audio.srcObject = new MediaStream(audioTracks);
-        audio.muted = true;
-        $('#hearComputer').classList.remove('hidden');
+      peer.on('call', (incomingCall) => {
+        if (incomingCall.metadata?.type !== 'talkback') { incomingCall.close(); return; }
+        if (talkbackCall) talkbackCall.close();
+        talkbackCall = incomingCall;
+        incomingCall.answer();
+        incomingCall.on('stream', (computerStream) => {
+          const audioTracks = computerStream.getAudioTracks();
+          if (!audioTracks.length) {
+            $('#phoneLiveLabel').textContent = 'Camera is live · computer microphone missing';
+            return;
+          }
+          const audio = $('#talkbackAudio');
+          audio.srcObject = new MediaStream(audioTracks);
+          audio.muted = true;
+          $('#hearComputer').classList.remove('hidden');
+          $('#hearComputer span').textContent = 'Hear computer';
+          $('#phoneLiveLabel').textContent += ' · talk-back ready';
+        });
+        incomingCall.on('error', () => { $('#phoneLiveLabel').textContent = 'Camera is live · talk-back failed'; });
       });
       activeCall.on('close', stopSender);
       activeCall.on('error', (error) => setStatus($('#senderStatus'), peerErrorMessage(error), true));
@@ -332,6 +354,7 @@ async function enableTalkbackSetup() {
     talkbackStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
     button.classList.add('enabled');
     button.querySelector('b').textContent = 'Computer microphone ready';
+    setStatus($('#viewerStatus'), 'Computer microphone ready — connect the phone');
   } catch (error) {
     setStatus($('#viewerStatus'), error.name === 'NotAllowedError' ? 'Computer microphone permission was denied.' : error.message, true);
   }

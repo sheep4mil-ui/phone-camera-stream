@@ -20,7 +20,7 @@ The **Include microphone audio** option is enabled by default. Audio plays with 
 
 After connecting, click **Enable audio** on the computer once. Browsers require this click before they allow incoming sound. Recordings render the visible video through an orientation-normalizing canvas and include the phone microphone track.
 
-For two-way talk-back, click **Enable computer microphone** below the room code before connecting the phone. After the phone connects, tap **Hear computer** on the phone once. The computer's **Mic on/Mic muted** button then controls talk-back audio.
+For two-way talk-back, click **Enable computer microphone** below the room code before connecting the phone. The app creates a separate PC-to-phone audio connection for broader mobile-browser compatibility. When the phone says **talk-back ready**, tap **Hear computer** once. The computer's **Mic on/Mic muted** button then controls talk-back audio.
 
 The site is static and hosted on GitHub Pages. PeerJS provides connection signaling; camera video flows directly between the two devices and is not uploaded to this repository or a media server. Room codes are temporary and disappear when the page closes.
 
